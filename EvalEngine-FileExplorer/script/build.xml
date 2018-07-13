@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!--
+ * Build Script for test engine
+ * 
+
+ant junit.start -propertyfile build.properties
+
+ant -verbose ATEHome.build -f build.xml
+
+To start selenium test engine:
+
+	ant -verbose test.web.start -f build_new.xml -propertyfile build.properties
+	
+ -->
+<project default="instrument" basedir="." name="Evaluation Engine build">
+	
+	<property file="build.properties" />
+	
+	<!-- To Set ATE Home with Build # -->
+	<property environment="env" />
+	<!-- <property name="project.ATEHome" value="${project.ATEHomeDir}/build_${env.BUILD_NUMBER}" /> -->
+	
+	<!--  properties for Installer Template -->
+	
+	<property name="project.template.rootDir" value="${workspace}/Installer/template" />
+	<property name="project.libDir" value="${workspace}/BuildFiles/lib" />
+	
+	
+	<property name="cobertura.dir" value="C:/CodeMaze/cobertura-2.1.1" />
+
+	<path id="cobertura.classpath">
+	    <fileset dir="${cobertura.dir}">
+	        <include name="cobertura-2.1.1.jar" />
+	        <include name="lib/**/*.jar" />
+	    </fileset>
+		
+		<fileset dir="${lib.dir}">
+			<include name="lib/**/*.jar" />
+		</fileset>
+		
+		<fileset dir="${lib.junit}">
+			<include name="**/*.jar" />
+		</fileset>
+		
+	</path>
+
+	<taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+	
+
+	<target name="instrument">
+		
+		<delete file="${instrumented.dir}/cobertura.ser" />
+	
+		<cobertura-instrument todir="${instrumented.dir}/bin" datafile="${instrumented.dir}/cobertura.ser" ignoreTrivial="true">
+	
+		    <fileset dir="${classes.dir}">
+		        <include name="**/*.class" />
+		        <exclude name="test/*Test.class" />
+		    </fileset>
+			
+			<!--
+		    <fileset dir="${guiclasses.dir}">
+		        <include name="**/*.class" />
+		        <exclude name="**/*Test.class" />
+		    </fileset>
+		    <fileset dir="${jars.dir}">
+		        <include name="my-simple-plugin.jar" />
+		    </fileset>
+		    -->
+			
+		</cobertura-instrument>	
+		
+		<junit fork="yes" dir="${src.dir}" failureProperty="test.failed">
+			<!--
+				Specify the name of the coverage data file to use.
+				The value specified below is the default.
+			-->
+			<sysproperty key="net.sourceforge.cobertura.datafile"
+				file="${instrumented.dir}/cobertura.ser" />
+
+			<!--
+				Note the classpath order: instrumented classes are before the
+				original (uninstrumented) classes.  This is important.
+			-->
+			<classpath location="${instrumented.dir}/bin" />
+
+			<!--
+				The instrumented classes reference classes used by the
+				Cobertura runtime, so Cobertura and its dependencies
+				must be on your classpath.
+			-->
+			<classpath refid="cobertura.classpath" />
+			
+			<classpath location="${classes.dir}" />
+
+			<formatter type="xml" />
+			
+			<!-- <test name="**/ParserTest.java" todir="${reports.xml.dir}" if="testcase" /> -->
+			
+			
+			<batchtest todir="${reports.xml.dir}" unless="testcase">
+				<fileset dir="${src.dir}">
+					<include name="test/*Test.java" />
+				</fileset>
+			</batchtest>
+			
+		</junit>
+		
+		<cobertura-report format="html" destdir="${coveragereport.dir}" datafile="${instrumented.dir}/cobertura.ser">
+		    <fileset dir="${src.dir}">
+		        <include name="**/*.java" />
+		    </fileset>
+		</cobertura-report>
+		
+		
+	</target>
+	
+
+	
+
+</project>
